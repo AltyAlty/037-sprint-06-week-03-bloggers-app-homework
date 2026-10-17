@@ -1,0 +1,23 @@
+export const POST_VALIDATION_CONSTRAINTS = {
+  ID: {
+    MIN_LENGTH: 1,
+    MAX_LENGTH: 100,
+  },
+  TITLE: {
+    MIN_LENGTH: 1,
+    MAX_LENGTH: 30,
+  },
+  SHORT_DESCRIPTION: {
+    MIN_LENGTH: 1,
+    MAX_LENGTH: 100,
+  },
+  CONTENT: {
+    MIN_LENGTH: 1,
+    MAX_LENGTH: 1000,
+  },
+
+  LIKE_STATUS: {
+    MIN_LENGTH: 1,
+    MAX_LENGTH: 6,
+  },
+};
