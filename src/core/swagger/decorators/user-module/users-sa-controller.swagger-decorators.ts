@@ -14,7 +14,7 @@ import { UserOutputDTO } from '../../../../modules/user/api/users/output-dto/use
 import { PaginatedUserListSwaggerOutputDTO } from './swagger-output-dto/paginated-user-list.swagger-output-dto';
 
 export const UsersSaControllerSwaggerDecorators = {
-  get createUser() {
+  get createConfirmedUser() {
     return applyDecorators(
       ApiOperation({ summary: 'Create a user' }),
       ApiCreatedResponse({ type: UserOutputDTO, description: 'Returns the created user' }),

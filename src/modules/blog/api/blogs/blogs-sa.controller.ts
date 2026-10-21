@@ -11,11 +11,8 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ApiBasicAuth, ApiTags } from '@nestjs/swagger';
-import { BlogsService } from '../../application/blogs/blogs.service';
-import { PostsService } from '../../application/posts/posts.service';
-import { BlogsQueryService } from '../../application/blogs/blogs.query-service';
-import { PostsQueryService } from '../../application/posts/posts.query-service';
 import { CreateBlogInputDTO } from './input-dto/create-blog.input-dto';
 import { CreatePostForBlogInputDTO } from './input-dto/create-post-for-blog.input-dto';
 import { GetBlogListQueryInputDTO } from './input-dto/query/get-blog-list-query.input-dto';
@@ -30,6 +27,14 @@ import { BasicAuthGuard } from '../../../../core/guards/basic-auth/basic-auth.gu
 import { SETTINGS } from '../../../../core/settings/settings';
 import { BlogsSaControllerSwaggerDecorators } from '../../../../core/swagger/decorators/blog-module/blogs-sa-controller.swagger-decorators';
 import { ExtractUserDataFromRequest } from '../../../user/api/auth/decorators/param-extraction/extract-user-data-from-request.param-decorator';
+import { CreateBlogCommand } from '../../application/blogs/commands/create-blog.command';
+import { MarkBlogAsDeletedByIdCommand } from '../../application/blogs/commands/mark-blog-as-deleted-by-id.command';
+import { UpdateBlogByIdCommand } from '../../application/blogs/commands/update-blog-by-id.command';
+import { GetBlogListQuery } from '../../application/blogs/queries/get-blog-list.query';
+import { CreatePostForBlogCommand } from '../../application/posts/commands/create-post-for-blog.command';
+import { MarkPostAsDeletedByBlogIdAndPostIdCommand } from '../../application/posts/commands/mark-post-as-deleted-by-blog-id-and-post-id.command';
+import { UpdatePostByBlogIdAndPostIdCommand } from '../../application/posts/commands/update-post-by-blog-id-and-post-id.command';
+import { GetPostListByBlogIdQuery } from '../../application/posts/queries/get-post-list-by-blog-id.query';
 
 /*SA-контроллер для блогов.*/
 @ApiTags(SETTINGS.BLOGS_SA_API_TAG)
@@ -38,10 +43,8 @@ import { ExtractUserDataFromRequest } from '../../../user/api/auth/decorators/pa
 @Controller(SETTINGS.BLOGS_SA_REFIX)
 export class BlogsSaController {
   public constructor(
-    private readonly blogsService: BlogsService,
-    private readonly blogsQueryService: BlogsQueryService,
-    private readonly postsService: PostsService,
-    private readonly postsQueryService: PostsQueryService
+    private readonly commandBus: CommandBus,
+    private readonly queryBus: QueryBus
   ) {}
 
   /*001. POST-запрос по созданию блога.*/
@@ -50,8 +53,8 @@ export class BlogsSaController {
   @Post(SETTINGS.BLOGS_SA_CREATE_BLOG_PATH)
   @HttpCode(HttpStatus.CREATED)
   public async createBlog(@Body() body: CreateBlogInputDTO): Promise<BlogOutputDTO> {
-    /*Просим сервис "BlogsService" создать блог.*/
-    return this.blogsService.create(body);
+    /*Просим шину "CommandBus" создать блог.*/
+    return this.commandBus.execute(new CreateBlogCommand(body));
   }
 
   /*002. POST-запрос по созданию поста в блоге.*/
@@ -63,8 +66,8 @@ export class BlogsSaController {
     @Param('id') id: string,
     @Body() body: CreatePostForBlogInputDTO
   ): Promise<PostOutputDTO> {
-    /*Просим сервис "PostsService" создать пост в блоге.*/
-    return this.postsService.createForBlog({ blogId: id, ...body });
+    /*Просим шину "CommandBus" создать пост в блоге.*/
+    return this.commandBus.execute(new CreatePostForBlogCommand({ blogId: id, ...body }));
   }
 
   /*003. GET-запрос по поиску блогов с пагинацией, используя query-параметры.*/
@@ -75,8 +78,8 @@ export class BlogsSaController {
   public async getBlogList(
     @Query() query: GetBlogListQueryInputDTO
   ): Promise<PaginationMetaDataOutputDTO<BlogListOutputDTO>> {
-    /*Просим query-сервис "BlogsQueryService" найти блоги.*/
-    return this.blogsQueryService.findAll(query);
+    /*Просим шину "QueryBus" найти блоги.*/
+    return this.queryBus.execute(new GetBlogListQuery(query));
   }
 
   /*004. GET-запрос по поиску постов с пагинацией по ID блога, используя query-параметры.*/
@@ -89,8 +92,8 @@ export class BlogsSaController {
     @Query() query: GetPostListByBlogIdQueryInputDTO,
     @ExtractUserDataFromRequest() userAccessJwtAuthContext: UserAccessJwtAuthContextDTO | null
   ): Promise<PaginationMetaDataOutputDTO<PostListOutputDTO>> {
-    /*Просим query-сервис "PostsQueryService" найти посты по ID блога.*/
-    return this.postsQueryService.findAll(query, id, userAccessJwtAuthContext?.id);
+    /*Просим шину "QueryBus" найти посты по ID блога.*/
+    return this.queryBus.execute(new GetPostListByBlogIdQuery(query, id, userAccessJwtAuthContext?.id));
   }
 
   /*005. PUT-запрос по изменению блога по ID, используя URI-параметры.*/
@@ -99,8 +102,8 @@ export class BlogsSaController {
   @Put(SETTINGS.BLOGS_SA_UPDATE_BLOG_BY_ID_PATH)
   @HttpCode(HttpStatus.NO_CONTENT)
   public async updateBlogById(@Param('id') id: string, @Body() body: UpdateBlogByIdInputDTO): Promise<void> {
-    /*Просим сервис "BlogsService" изменить блог по ID.*/
-    await this.blogsService.updateById({ id, ...body });
+    /*Просим шину "CommandBus" изменить блог по ID.*/
+    await this.commandBus.execute(new UpdateBlogByIdCommand({ id, ...body }));
   }
 
   /*006. PUT-запрос по изменению поста по ID блога и ID поста, используя URI-параметры.*/
@@ -113,8 +116,8 @@ export class BlogsSaController {
     @Param('blogId') blogId: string,
     @Body() body: UpdatePostByBlogIdAndPostIdInputDTO
   ): Promise<void> {
-    /*Просим сервис "PostsService" изменить пост по ID.*/
-    await this.postsService.updateById({ blogId, id: postId, ...body });
+    /*Просим шину "CommandBus" изменить пост по ID блога и ID поста.*/
+    await this.commandBus.execute(new UpdatePostByBlogIdAndPostIdCommand({ blogId, id: postId, ...body }));
   }
 
   /*007. DELETE-запрос по удалению блога по ID, используя URI-параметры.*/
@@ -123,8 +126,8 @@ export class BlogsSaController {
   @Delete(SETTINGS.BLOGS_SA_DELETE_BLOG_BY_ID_PATH)
   @HttpCode(HttpStatus.NO_CONTENT)
   public async deleteBlogById(@Param('id') id: string): Promise<void> {
-    /*Просим сервис "BlogsService" soft удалить блог по ID.*/
-    await this.blogsService.markAsDeletedById(id);
+    /*Просим шину "CommandBus" soft удалить блог по ID.*/
+    await this.commandBus.execute(new MarkBlogAsDeletedByIdCommand(id));
   }
 
   /*008. DELETE-запрос по удалению поста по ID блога и ID поста, используя URI-параметры.*/
@@ -136,7 +139,7 @@ export class BlogsSaController {
     @Param('postId') postId: string,
     @Param('blogId') blogId: string
   ): Promise<void> {
-    /*Просим сервис "PostsService" soft удалить пост по ID.*/
-    await this.postsService.markAsDeletedById(postId, blogId);
+    /*Просим шину "CommandBus" soft удалить пост по ID блога и ID поста.*/
+    await this.commandBus.execute(new MarkPostAsDeletedByBlogIdAndPostIdCommand(postId, blogId));
   }
 }

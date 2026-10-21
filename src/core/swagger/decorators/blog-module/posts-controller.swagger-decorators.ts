@@ -16,7 +16,7 @@ import { PaginatedCommentListSwaggerOutputDTO } from './swagger-output-dto/pagin
 import { PaginatedPostListSwaggerOutputDTO } from './swagger-output-dto/paginated-post-list.swagger-output-dto';
 
 export const PostsControllerSwaggerDecorators = {
-  get createCommentForPostByPostId() {
+  get createCommentForPost() {
     return applyDecorators(
       ApiOperation({ summary: 'Create a comment for a post' }),
       ApiCreatedResponse({ description: 'Returns the created comment', type: CommentOutputDTO }),

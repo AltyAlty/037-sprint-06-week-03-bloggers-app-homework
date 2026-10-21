@@ -1,9 +1,6 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { CommentsService } from '../../application/comments/comments.service';
-import { PostsService } from '../../application/posts/posts.service';
-import { CommentsQueryService } from '../../application/comments/comments.query-service';
-import { PostsQueryService } from '../../application/posts/posts.query-service';
 import { CreateCommentForPostInputDTO } from './input-dto/create-comment-for-post.input-dto';
 import { GetCommentListByPostIdQueryInputDTO } from './input-dto/query/get-comment-list-by-post-id-query.input-dto';
 import { GetPostListQueryInputDTO } from './input-dto/query/get-post-list-query.input-dto';
@@ -17,6 +14,11 @@ import { OptionalAccessJwtAuthGuard } from '../../../../core/guards/optional-acc
 import { SETTINGS } from '../../../../core/settings/settings';
 import { PostsControllerSwaggerDecorators } from '../../../../core/swagger/decorators/blog-module/posts-controller.swagger-decorators';
 import { ExtractUserDataFromRequest } from '../../../user/api/auth/decorators/param-extraction/extract-user-data-from-request.param-decorator';
+import { CreateCommentForPostCommand } from '../../application/comments/commands/create-comment-for-post.command';
+import { GetCommentListByPostIdQuery } from '../../application/comments/queries/get-comment-list-by-post-id.query';
+import { UpdatePostLikeStatusByIdCommand } from '../../application/posts/commands/update-post-like-status-by-id.command';
+import { GetPostByIdQuery } from '../../application/posts/queries/get-post-by-id.query';
+import { GetPostListQuery } from '../../application/posts/queries/get-post-list.query';
 
 /*Контроллер для постов.*/
 @ApiTags(SETTINGS.POSTS_API_TAG)
@@ -24,24 +26,22 @@ import { ExtractUserDataFromRequest } from '../../../user/api/auth/decorators/pa
 @Controller(SETTINGS.POSTS_PREFIX)
 export class PostsController {
   public constructor(
-    private readonly postsService: PostsService,
-    private readonly postsQueryService: PostsQueryService,
-    private readonly commentsService: CommentsService,
-    private readonly commentsQueryService: CommentsQueryService
+    private readonly commandBus: CommandBus,
+    private readonly queryBus: QueryBus
   ) {}
 
   /*001. POST-запрос по созданию комментария в посте по ID поста, используя URI-параметры.*/
-  @PostsControllerSwaggerDecorators.createCommentForPostByPostId
+  @PostsControllerSwaggerDecorators.createCommentForPost
   @UseGuards(AccessJwtAuthGuard)
   @Post(SETTINGS.POSTS_CREATE_COMMENT_FOR_POST_PATH)
   @HttpCode(HttpStatus.CREATED)
-  public async createCommentForPostByPostId(
+  public async createCommentForPost(
     @Param('id') id: string,
     @Body() body: CreateCommentForPostInputDTO,
     @ExtractUserDataFromRequest() userJwtAccessAuthContext: UserAccessJwtAuthContextDTO
   ): Promise<CommentOutputDTO> {
-    /*Просим сервис "CommentsService" создать комментарий в посте.*/
-    return this.commentsService.createForPost({ postId: id, ...body }, userJwtAccessAuthContext);
+    /*Просим шину "CommandBus" создать комментарий в посте.*/
+    return this.commandBus.execute(new CreateCommentForPostCommand({ postId: id, ...body }, userJwtAccessAuthContext));
   }
 
   /*002. GET-запрос по поиску поста по ID, используя URI-параметры.*/
@@ -53,8 +53,8 @@ export class PostsController {
     @Param('id') id: string,
     @ExtractUserDataFromRequest() userAccessJwtAuthContext: UserAccessJwtAuthContextDTO | null
   ): Promise<PostOutputDTO> {
-    /*Просим query-сервис "PostsQueryService" найти пост по ID.*/
-    return this.postsQueryService.findById(id, userAccessJwtAuthContext?.id);
+    /*Просим шину "QueryBus" найти пост по ID.*/
+    return this.queryBus.execute(new GetPostByIdQuery(id, userAccessJwtAuthContext?.id));
   }
 
   /*003. GET-запрос по поиску постов с пагинацией, используя query-параметры.*/
@@ -66,8 +66,8 @@ export class PostsController {
     @Query() query: GetPostListQueryInputDTO,
     @ExtractUserDataFromRequest() userAccessJwtAuthContext: UserAccessJwtAuthContextDTO | null
   ): Promise<PaginationMetaDataOutputDTO<PostListOutputDTO>> {
-    /*Просим query-сервис "PostsQueryService" найти посты.*/
-    return this.postsQueryService.findAll(query, undefined, userAccessJwtAuthContext?.id);
+    /*Просим шину "QueryBus" найти посты.*/
+    return this.queryBus.execute(new GetPostListQuery(query, userAccessJwtAuthContext?.id));
   }
 
   /*004. GET-запрос по поиску комментариев с пагинацией по ID поста, используя query-параметры.*/
@@ -80,21 +80,21 @@ export class PostsController {
     @Query() query: GetCommentListByPostIdQueryInputDTO,
     @ExtractUserDataFromRequest() userAccessJwtAuthContext: UserAccessJwtAuthContextDTO | null
   ): Promise<PaginationMetaDataOutputDTO<CommentListOutputDTO>> {
-    /*Просим query-сервис "CommentsQueryService" найти комментарии по ID поста.*/
-    return this.commentsQueryService.findAllByPostId(id, query, userAccessJwtAuthContext?.id);
+    /*Просим шину "QueryBus" найти комментарии по ID поста.*/
+    return this.queryBus.execute(new GetCommentListByPostIdQuery(id, query, userAccessJwtAuthContext?.id));
   }
 
   /*005. PUT-запрос по изменению статуса лайка поста по ID поста, используя URI-параметры.*/
   @PostsControllerSwaggerDecorators.updatePostLikeStatusById
   @UseGuards(AccessJwtAuthGuard)
-  @Put(SETTINGS.POSTS_LIKE_POST_BY_ID_PATH)
+  @Put(SETTINGS.POSTS_UPDATE_POST_LIKE_STATUS_BY_ID_PATH)
   @HttpCode(HttpStatus.NO_CONTENT)
   public async updatePostLikeStatusById(
     @Param('id') id: string,
     @Body() body: UpdatePostLikeStatusByIdInputDTO,
     @ExtractUserDataFromRequest() userAccessJwtAuthContext: UserAccessJwtAuthContextDTO
   ): Promise<void> {
-    /*Просим сервис "PostsService" изменить статус лайка поста по ID поста.*/
-    await this.postsService.updatePostLikeStatusById({ id, ...body }, userAccessJwtAuthContext);
+    /*Просим шину "CommandBus" изменить статус лайка поста по ID поста.*/
+    await this.commandBus.execute(new UpdatePostLikeStatusByIdCommand({ id, ...body }, userAccessJwtAuthContext));
   }
 }

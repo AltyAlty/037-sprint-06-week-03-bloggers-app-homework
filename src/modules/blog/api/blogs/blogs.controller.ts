@@ -1,7 +1,6 @@
 import { Controller, Get, HttpCode, HttpStatus, Param, Query, UseGuards } from '@nestjs/common';
+import { QueryBus } from '@nestjs/cqrs';
 import { ApiTags } from '@nestjs/swagger';
-import { BlogsQueryService } from '../../application/blogs/blogs.query-service';
-import { PostsQueryService } from '../../application/posts/posts.query-service';
 import { GetBlogListQueryInputDTO } from './input-dto/query/get-blog-list-query.input-dto';
 import { GetPostListByBlogIdQueryInputDTO } from './input-dto/query/get-post-list-by-blog-id-query.input-dto';
 import { PaginationMetaDataOutputDTO } from '../../../../core/pagination/output-dto/pagination-meta-data.output-dto';
@@ -12,23 +11,23 @@ import { OptionalAccessJwtAuthGuard } from '../../../../core/guards/optional-acc
 import { SETTINGS } from '../../../../core/settings/settings';
 import { BlogsControllerSwaggerDecorators } from '../../../../core/swagger/decorators/blog-module/blogs-controller.swagger-decorators';
 import { ExtractUserDataFromRequest } from '../../../user/api/auth/decorators/param-extraction/extract-user-data-from-request.param-decorator';
+import { GetBlogByIdQuery } from '../../application/blogs/queries/get-blog-by-id.query';
+import { GetBlogListQuery } from '../../application/blogs/queries/get-blog-list.query';
+import { GetPostListByBlogIdQuery } from '../../application/posts/queries/get-post-list-by-blog-id.query';
 
 /*Контроллер для блогов.*/
 @ApiTags(SETTINGS.BLOGS_API_TAG)
 @Controller(SETTINGS.BLOGS_PREFIX)
 export class BlogsController {
-  public constructor(
-    private readonly blogsQueryService: BlogsQueryService,
-    private readonly postsQueryService: PostsQueryService
-  ) {}
+  public constructor(private readonly queryBus: QueryBus) {}
 
   /*001. GET-запрос по поиску блога по ID, используя URI-параметры.*/
   @BlogsControllerSwaggerDecorators.getBlogById
   @Get(SETTINGS.BLOGS_GET_BLOG_BY_ID_PATH)
   @HttpCode(HttpStatus.OK)
   public async getBlogById(@Param('id') id: string): Promise<BlogOutputDTO> {
-    /*Просим query-сервис "BlogsQueryService" найти блог по ID.*/
-    return this.blogsQueryService.findById(id);
+    /*Просим шину "QueryBus" найти блог по ID.*/
+    return this.queryBus.execute(new GetBlogByIdQuery(id));
   }
 
   /*002. GET-запрос по поиску блогов с пагинацией, используя query-параметры.*/
@@ -38,8 +37,8 @@ export class BlogsController {
   public async getBlogList(
     @Query() query: GetBlogListQueryInputDTO
   ): Promise<PaginationMetaDataOutputDTO<BlogListOutputDTO>> {
-    /*Просим query-сервис "BlogsQueryService" найти блоги.*/
-    return this.blogsQueryService.findAll(query);
+    /*Просим шину "QueryBus" найти блоги.*/
+    return this.queryBus.execute(new GetBlogListQuery(query));
   }
 
   /*003. GET-запрос по поиску постов с пагинацией по ID блога, используя query-параметры.*/
@@ -52,7 +51,7 @@ export class BlogsController {
     @Query() query: GetPostListByBlogIdQueryInputDTO,
     @ExtractUserDataFromRequest() userAccessJwtAuthContext: UserAccessJwtAuthContextDTO | null
   ): Promise<PaginationMetaDataOutputDTO<PostListOutputDTO>> {
-    /*Просим query-сервис "PostsQueryService" найти посты по ID блога.*/
-    return this.postsQueryService.findAll(query, id, userAccessJwtAuthContext?.id);
+    /*Просим шину "QueryBus" найти посты по ID блога.*/
+    return this.queryBus.execute(new GetPostListByBlogIdQuery(query, id, userAccessJwtAuthContext?.id));
   }
 }

@@ -1,8 +1,7 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, Res, UseGuards } from '@nestjs/common';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
-import { AuthService } from '../../application/auth/auth.service';
-import { UsersQueryService } from '../../application/users/users.query-service';
 import { AuthUserByLoginOrEmailInputDTO } from './input-dto/auth-user-by-login-or-email.input-dto';
 import { ConfirmUserByCodeInputDTO } from './input-dto/confirm-user-by-code.input-dto';
 import { RegisterUserInputDTO } from './input-dto/register-user.input-dto';
@@ -11,7 +10,7 @@ import { SendPasswordRecoveryCodeInputDTO } from './input-dto/send-password-reco
 import { SetNewPasswordByPasswordRecoveryCodeInputDTO } from './input-dto/set-new-password-by-password-recovery-code.input-dto';
 import { AuthUserByLoginOrEmailOutputDTO } from './output-dto/auth-user-by-login-or-email.output-dto';
 import { AuthUserDataOutputDTO } from './output-dto/auth-user-data.output-dto';
-import { GetNewAccessAndRefreshTokensOutputDTO } from './output-dto/get-new-access-and-refresh-tokens.output-dto';
+import { CreateNewAccessAndRefreshTokensOutputDTO } from './output-dto/create-new-access-and-refresh-tokens.output-dto';
 import { AccessJwtAuthGuard } from '../../../../core/guards/access-jwt-auth/access-jwt-auth.guard';
 import { UserAccessJwtAuthContextDTO } from '../../../../core/guards/access-jwt-auth/dto/user-access-jwt-auth-context.dto';
 import { IpAndUserAgentGuard } from '../../../../core/guards/ip-and-user-agent/ip-and-user-agent.guard';
@@ -22,6 +21,15 @@ import { RefreshJwtAuthGuard } from '../../../../core/guards/refresh-jwt-auth/re
 import { RequestRateLimitingGuard } from '../../../../core/guards/request-rate-limiting/request-rate-limiting.guard';
 import { SETTINGS } from '../../../../core/settings/settings';
 import { AuthControllerSwaggerDecorators } from '../../../../core/swagger/decorators/user-module/auth-controller.swagger-decorators';
+import { AuthUserCommand } from '../../application/auth/commands/auth-user.command';
+import { ConfirmUserByCodeCommand } from '../../application/auth/commands/confirm-user-by-code.command';
+import { CreateNewAccessAndRefreshTokensCommand } from '../../application/auth/commands/create-new-access-and-refresh-tokens.command';
+import { RegisterUserCommand } from '../../application/auth/commands/register-user.command';
+import { ResendConfirmationEmailCommand } from '../../application/auth/commands/resend-confirmation-email.command';
+import { RevokeSessionCommand } from '../../application/auth/commands/revoke-session.command';
+import { SendPasswordRecoveryCodeCommand } from '../../application/auth/commands/send-password-recovery-code.command';
+import { UpdatePasswordByPasswordRecoveryCodeCommand } from '../../application/auth/commands/update-password-by-password-recovery-code.command';
+import { GetAuthUserDataByAccessTokenQuery } from '../../application/auth/queries/get-auth-user-data-by-access-token.query';
 import { UserAgentAndIpDTO } from './decorators/param-extraction/dto/user-agent-and-ip.dto';
 import { ExtractIpAndUserAgentFromRequest } from './decorators/param-extraction/extract-ip-and-user-agent-from-request.param-decorator';
 import { ExtractUserDataFromRequest } from './decorators/param-extraction/extract-user-data-from-request.param-decorator';
@@ -31,8 +39,8 @@ import { ExtractUserDataFromRequest } from './decorators/param-extraction/extrac
 @Controller(SETTINGS.AUTH_PREFIX)
 export class AuthController {
   public constructor(
-    private readonly authService: AuthService,
-    private readonly usersQueryService: UsersQueryService
+    private readonly commandBus: CommandBus,
+    private readonly queryBus: QueryBus
   ) {}
 
   /*001. POST-запрос по регистрации пользователя.*/
@@ -41,8 +49,8 @@ export class AuthController {
   @Post(SETTINGS.AUTH_REGISTER_USER_PATH)
   @HttpCode(HttpStatus.NO_CONTENT)
   public async registerUser(@Body() body: RegisterUserInputDTO): Promise<void> {
-    /*Просим сервис "AuthService" зарегистрировать пользователя.*/
-    await this.authService.registerUser(body);
+    /*Просим шину "CommandBus" зарегистрировать пользователя.*/
+    await this.commandBus.execute(new RegisterUserCommand(body));
   }
 
   /*002. POST-запрос по повторной отправке письма для подтверждения регистрации пользователя.*/
@@ -51,8 +59,8 @@ export class AuthController {
   @Post(SETTINGS.AUTH_RESEND_CONFIRMATION_EMAIL_PATH)
   @HttpCode(HttpStatus.NO_CONTENT)
   public async resendConfirmationEmail(@Body() body: ResendConfirmationEmailInputDTO): Promise<void> {
-    /*Просим сервис "AuthService" повторно отправить письмо для подтверждения регистрации пользователя.*/
-    await this.authService.resendConfirmationEmail(body);
+    /*Просим шину "CommandBus" повторно отправить письмо для подтверждения регистрации пользователя.*/
+    await this.commandBus.execute(new ResendConfirmationEmailCommand(body));
   }
 
   /*003. POST-запрос по подтверждению регистрации пользователя по коду подтверждения регистрации пользователя.*/
@@ -61,9 +69,8 @@ export class AuthController {
   @Post(SETTINGS.AUTH_CONFIRM_USER_BY_CODE_PATH)
   @HttpCode(HttpStatus.NO_CONTENT)
   public async confirmUserByCode(@Body() body: ConfirmUserByCodeInputDTO): Promise<void> {
-    /*Просим сервис "AuthService" подтвердить регистрацию пользователя по коду подтверждения регистрации
-    пользователя.*/
-    await this.authService.confirmByCode(body);
+    /*Просим шину "CommandBus" подтвердить регистрацию пользователя по коду подтверждения регистрации пользователя.*/
+    await this.commandBus.execute(new ConfirmUserByCodeCommand(body));
   }
 
   /*004. POST-запрос по отправке письма с кодом восстановления пароля пользователя.*/
@@ -72,20 +79,20 @@ export class AuthController {
   @Post(SETTINGS.AUTH_SEND_PASSWORD_RECOVERY_CODE_PATH)
   @HttpCode(HttpStatus.NO_CONTENT)
   public async sendPasswordRecoveryCode(@Body() body: SendPasswordRecoveryCodeInputDTO): Promise<void> {
-    /*Просим сервис "AuthService" отправить письмо с кодом восстановления пароля пользователя.*/
-    await this.authService.sendPasswordRecoveryCode(body);
+    /*Просим шину "CommandBus" отправить письмо с кодом восстановления пароля пользователя.*/
+    await this.commandBus.execute(new SendPasswordRecoveryCodeCommand(body));
   }
 
   /*005. POST-запрос по установлению нового пароля пользователя по коду восстановления пароля пользователя.*/
-  @AuthControllerSwaggerDecorators.setNewPasswordByPasswordRecoveryCode
+  @AuthControllerSwaggerDecorators.updatePasswordByPasswordRecoveryCode
   @UseGuards(RequestRateLimitingGuard)
-  @Post(SETTINGS.AUTH_SET_NEW_PASSWORD_BY_PASSWORD_RECOVERY_CODE_PATH)
+  @Post(SETTINGS.AUTH_UPDATE_PASSWORD_BY_PASSWORD_RECOVERY_CODE_PATH)
   @HttpCode(HttpStatus.NO_CONTENT)
-  public async setNewPasswordByPasswordRecoveryCode(
+  public async updatePasswordByPasswordRecoveryCode(
     @Body() body: SetNewPasswordByPasswordRecoveryCodeInputDTO
   ): Promise<void> {
-    /*Просим сервис "AuthService" установить новый пароль пользователя по коду восстановления пароля пользователя.*/
-    await this.authService.updatePasswordByPasswordRecoveryCode(body);
+    /*Просим шину "CommandBus" установить новый пароль пользователя по коду восстановления пароля пользователя.*/
+    await this.commandBus.execute(new UpdatePasswordByPasswordRecoveryCodeCommand(body));
   }
 
   /*006. POST-запрос по аутентификации пользователя по логину или email и паролю.*/
@@ -100,9 +107,10 @@ export class AuthController {
     @Res({ passthrough: true })
     res: Response
   ): Promise<AuthUserByLoginOrEmailOutputDTO> {
-    /*Просим сервис "AuthService" аутентифицировать пользователя.*/
-    const { accessToken, refreshToken }: { accessToken: string; refreshToken: string } =
-      await this.authService.authUser(userLocalAuthContext, ipAndUserAgent);
+    /*Просим шину "CommandBus" аутентифицировать пользователя.*/
+    const { accessToken, refreshToken }: { accessToken: string; refreshToken: string } = await this.commandBus.execute(
+      new AuthUserCommand(userLocalAuthContext, ipAndUserAgent)
+    );
 
     /*Отправляем RT клиенту через cookies, используя метод "res.cookie()" из Express.js.*/
     res.cookie('refreshToken', refreshToken, { httpOnly: true, secure: true });
@@ -110,20 +118,21 @@ export class AuthController {
     return { accessToken };
   }
 
-  /*007. POST-запрос по получению новых AT и RT.*/
-  @AuthControllerSwaggerDecorators.getNewAccessAndRefreshTokens
+  /*007. POST-запрос по созданию новых AT и RT.*/
+  @AuthControllerSwaggerDecorators.createNewAccessAndRefreshTokens
   @UseGuards(IpAndUserAgentGuard, RefreshJwtAuthGuard)
-  @Post(SETTINGS.AUTH_GET_NEW_ACCESS_AND_REFRESH_TOKENS_PATH)
+  @Post(SETTINGS.AUTH_CREATE_NEW_ACCESS_AND_REFRESH_TOKENS_PATH)
   @HttpCode(HttpStatus.OK)
-  public async getNewAccessAndRefreshTokens(
+  public async createNewAccessAndRefreshTokens(
     @ExtractUserDataFromRequest() userRefreshJwtAuthContext: UserRefreshJwtAuthContextDTO,
     @ExtractIpAndUserAgentFromRequest() ipAndUserAgent: UserAgentAndIpDTO,
     @Res({ passthrough: true })
     res: Response
-  ): Promise<GetNewAccessAndRefreshTokensOutputDTO> {
-    /*Просим сервис "AuthService" создать новую пару AT и RT.*/
-    const { accessToken, refreshToken }: { accessToken: string; refreshToken: string } =
-      await this.authService.getNewAccessAndRefreshTokens(userRefreshJwtAuthContext, ipAndUserAgent);
+  ): Promise<CreateNewAccessAndRefreshTokensOutputDTO> {
+    /*Просим шину "CommandBus" создать новую пару AT и RT.*/
+    const { accessToken, refreshToken }: { accessToken: string; refreshToken: string } = await this.commandBus.execute(
+      new CreateNewAccessAndRefreshTokensCommand(userRefreshJwtAuthContext, ipAndUserAgent)
+    );
 
     /*Отправляем RT клиенту через cookies, используя метод "res.cookie()" из Express.js.*/
     res.cookie('refreshToken', refreshToken, { httpOnly: true, secure: true });
@@ -134,24 +143,24 @@ export class AuthController {
   /*008. POST-запрос по отзыву пользовательской сессии.*/
   @AuthControllerSwaggerDecorators.revokeSession
   @UseGuards(RefreshJwtAuthGuard)
-  @Post(SETTINGS.AUTH_LOGOUT_PATH)
+  @Post(SETTINGS.AUTH_REVOKE_SESSION_PATH)
   @HttpCode(HttpStatus.NO_CONTENT)
   public async revokeSession(
     @ExtractUserDataFromRequest() userRefreshJwtAuthContext: UserRefreshJwtAuthContextDTO
   ): Promise<void> {
-    /*Просим сервис "AuthService" отозвать пользовательскую сессию.*/
-    await this.authService.revokeSession(userRefreshJwtAuthContext);
+    /*Просим шину "CommandBus" отозвать пользовательскую сессию.*/
+    await this.commandBus.execute(new RevokeSessionCommand(userRefreshJwtAuthContext));
   }
 
   /*009. GET-запрос по получению данных пользователя по AT.*/
   @AuthControllerSwaggerDecorators.getAuthUserDataByAccessToken
   @UseGuards(AccessJwtAuthGuard)
-  @Get(SETTINGS.AUTH_GET_USER_DATA_BY_ACCESS_TOKEN_PATH)
+  @Get(SETTINGS.AUTH_GET_AUTH_USER_DATA_BY_ACCESS_TOKEN_PATH)
   @HttpCode(HttpStatus.OK)
   public async getAuthUserDataByAccessToken(
     @ExtractUserDataFromRequest() userAccessJwtAuthContext: UserAccessJwtAuthContextDTO
   ): Promise<AuthUserDataOutputDTO> {
-    /*Просим сервис "UsersQueryService" найти данные о пользователе по ID пользователя при предоставлении AT.*/
-    return this.usersQueryService.getAuthUserDataByUserId(userAccessJwtAuthContext.id);
+    /*Просим шину "QueryBus" найти данные о пользователе по ID пользователя при предоставлении AT.*/
+    return this.queryBus.execute(new GetAuthUserDataByAccessTokenQuery(userAccessJwtAuthContext.id));
   }
 }

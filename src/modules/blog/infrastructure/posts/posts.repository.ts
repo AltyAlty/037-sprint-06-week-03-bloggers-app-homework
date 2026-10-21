@@ -19,7 +19,7 @@ export class PostsRepository {
       .insert()
       .into(Post)
       .values(post)
-      .orUpdate(['title', 'short_description', 'content'], ['id'])
+      .orUpdate(['title', 'short_description', 'content', 'likes_count', 'dislikes_count'], ['id'])
       .execute();
   }
 
@@ -30,7 +30,7 @@ export class PostsRepository {
       .insert()
       .into(PostLikeData)
       .values(postLikeData)
-      .orUpdate(['like_status', 'addedAt'], ['id'])
+      .orUpdate(['like_status', 'added_at'], ['id'])
       .execute();
   }
 

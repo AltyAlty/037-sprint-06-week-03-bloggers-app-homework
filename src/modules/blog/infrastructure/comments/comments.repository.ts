@@ -19,7 +19,7 @@ export class CommentsRepository {
       .insert()
       .into(Comment)
       .values(comment)
-      .orUpdate(['content'], ['id'])
+      .orUpdate(['content', 'likes_count', 'dislikes_count'], ['id'])
       .execute();
   }
 

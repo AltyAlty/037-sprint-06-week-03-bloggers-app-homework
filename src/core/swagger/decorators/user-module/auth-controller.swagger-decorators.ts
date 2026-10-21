@@ -12,7 +12,7 @@ import {
 import { ErrorsMessagesSwaggerType } from '../../../validation/types/errors-messages.type';
 import { AuthUserByLoginOrEmailOutputDTO } from '../../../../modules/user/api/auth/output-dto/auth-user-by-login-or-email.output-dto';
 import { AuthUserDataOutputDTO } from '../../../../modules/user/api/auth/output-dto/auth-user-data.output-dto';
-import { GetNewAccessAndRefreshTokensOutputDTO } from '../../../../modules/user/api/auth/output-dto/get-new-access-and-refresh-tokens.output-dto';
+import { CreateNewAccessAndRefreshTokensOutputDTO } from '../../../../modules/user/api/auth/output-dto/create-new-access-and-refresh-tokens.output-dto';
 
 export const AuthControllerSwaggerDecorators = {
   get registerUser() {
@@ -66,7 +66,7 @@ export const AuthControllerSwaggerDecorators = {
     );
   },
 
-  get setNewPasswordByPasswordRecoveryCode() {
+  get updatePasswordByPasswordRecoveryCode() {
     return applyDecorators(
       ApiOperation({ summary: 'Set a new password by password recovery code' }),
       ApiNoContentResponse({ description: `Updates the user's password` }),
@@ -95,12 +95,12 @@ export const AuthControllerSwaggerDecorators = {
     );
   },
 
-  get getNewAccessAndRefreshTokens() {
+  get createNewAccessAndRefreshTokens() {
     return applyDecorators(
-      ApiOperation({ summary: 'Get new Access and Refresh JWTs by refresh JWT' }),
+      ApiOperation({ summary: 'Create new Access and Refresh JWTs by refresh JWT' }),
       ApiOkResponse({
         description: 'Sends new Access (through body) and Refresh (through cookies) JWTs',
-        type: GetNewAccessAndRefreshTokensOutputDTO,
+        type: CreateNewAccessAndRefreshTokensOutputDTO,
       }),
       ApiUnauthorizedResponse({
         description: 'The refresh JWT is invalid, incorrect or expired',

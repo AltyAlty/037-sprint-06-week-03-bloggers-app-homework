@@ -1,7 +1,6 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Put, UseGuards } from '@nestjs/common';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { CommentsService } from '../../application/comments/comments.service';
-import { CommentsQueryService } from '../../application/comments/comments.query-service';
 import { UpdateCommentByIdInputDTO } from './input-dto/update-comment-by-id.input-dto';
 import { UpdateCommentLikeStatusByIdInputDTO } from './input-dto/update-comment-like-status-by-id.input-dto';
 import { CommentOutputDTO } from './output-dto/comment.output-dto';
@@ -11,6 +10,10 @@ import { OptionalAccessJwtAuthGuard } from '../../../../core/guards/optional-acc
 import { SETTINGS } from '../../../../core/settings/settings';
 import { CommentsControllerSwaggerDecorators } from '../../../../core/swagger/decorators/blog-module/comments-controller.swagger-decorators';
 import { ExtractUserDataFromRequest } from '../../../user/api/auth/decorators/param-extraction/extract-user-data-from-request.param-decorator';
+import { MarkCommentAsDeletedByIdCommand } from '../../application/comments/commands/mark-comment-as-deleted-by-id.command';
+import { UpdateCommentByIdCommand } from '../../application/comments/commands/update-comment-by-id.command';
+import { UpdateCommentLikeStatusByIdCommand } from '../../application/comments/commands/update-comment-like-status-by-id.command';
+import { GetCommentByIdQuery } from '../../application/comments/queries/get-comment-by-id.query';
 
 /*Контроллер для комментариев.*/
 @ApiTags(SETTINGS.COMMENTS_API_TAG)
@@ -18,8 +21,8 @@ import { ExtractUserDataFromRequest } from '../../../user/api/auth/decorators/pa
 @Controller(SETTINGS.COMMENTS_PREFIX)
 export class CommentsController {
   public constructor(
-    private readonly commentsService: CommentsService,
-    private readonly commentsQueryService: CommentsQueryService
+    private readonly commandBus: CommandBus,
+    private readonly queryBus: QueryBus
   ) {}
 
   /*001. GET-запрос по поиску комментария по ID, используя URI-параметры.*/
@@ -31,8 +34,8 @@ export class CommentsController {
     @Param('id') id: string,
     @ExtractUserDataFromRequest() userAccessJwtAuthContext: UserAccessJwtAuthContextDTO | null
   ): Promise<CommentOutputDTO> {
-    /*Просим query-сервис "CommentsQueryService" найти комментарий по ID.*/
-    return this.commentsQueryService.findById(id, userAccessJwtAuthContext?.id);
+    /*Просим шину "QueryBus" найти комментарий по ID.*/
+    return this.queryBus.execute(new GetCommentByIdQuery(id, userAccessJwtAuthContext?.id));
   }
 
   /*002. PUT-запрос по изменению комментария по ID, используя URI-параметры.*/
@@ -45,22 +48,22 @@ export class CommentsController {
     @Body() body: UpdateCommentByIdInputDTO,
     @ExtractUserDataFromRequest() userAccessJwtAuthContext: UserAccessJwtAuthContextDTO
   ): Promise<void> {
-    /*Просим сервис "CommentsService" изменить комментарий по ID.*/
-    await this.commentsService.updateById({ id, ...body }, userAccessJwtAuthContext);
+    /*Просим шину "CommandBus" изменить комментарий по ID поста.*/
+    await this.commandBus.execute(new UpdateCommentByIdCommand({ id, ...body }, userAccessJwtAuthContext));
   }
 
   /*003. PUT-запрос по изменению статуса лайка комментария по ID комментария, используя URI-параметры.*/
   @CommentsControllerSwaggerDecorators.updateCommentLikeStatusById
   @UseGuards(AccessJwtAuthGuard)
-  @Put(SETTINGS.COMMENTS_LIKE_COMMENT_BY_ID_PATH)
+  @Put(SETTINGS.COMMENTS_UPDATE_COMMENT_LIKE_STATUS_BY_ID_PATH)
   @HttpCode(HttpStatus.NO_CONTENT)
   public async updateCommentLikeStatusById(
     @Param('id') id: string,
     @Body() body: UpdateCommentLikeStatusByIdInputDTO,
     @ExtractUserDataFromRequest() userAccessJwtAuthContext: UserAccessJwtAuthContextDTO
   ): Promise<void> {
-    /*Просим сервис "CommentsService" изменить статус лайка комментария по ID комментария.*/
-    await this.commentsService.updateCommentLikeStatusById({ id, ...body }, userAccessJwtAuthContext);
+    /*Просим шину "CommandBus" изменить статус лайка комментария по ID комментария.*/
+    await this.commandBus.execute(new UpdateCommentLikeStatusByIdCommand({ id, ...body }, userAccessJwtAuthContext));
   }
 
   /*004. DELETE-запрос по удалению комментария по ID, используя URI-параметры.*/
@@ -72,7 +75,7 @@ export class CommentsController {
     @Param('id') id: string,
     @ExtractUserDataFromRequest() userAccessJwtAuthContext: UserAccessJwtAuthContextDTO
   ): Promise<void> {
-    /*Просим сервис "CommentsService" soft удалить комментарий по ID.*/
-    await this.commentsService.markAsDeletedById(id, userAccessJwtAuthContext);
+    /*Просим шину "CommandBus" soft удалить комментарий по ID.*/
+    await this.commandBus.execute(new MarkCommentAsDeletedByIdCommand(id, userAccessJwtAuthContext));
   }
 }

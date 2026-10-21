@@ -17,7 +17,7 @@ export class SecurityDevicesRepository {
       .insert()
       .into(SecurityDevice)
       .values(securityDevice)
-      .orUpdate(['title', 'ip', 'last_active_date'], ['deviceId'])
+      .orUpdate(['title', 'ip', 'last_active_date'], ['device_id'])
       .execute();
   }
 

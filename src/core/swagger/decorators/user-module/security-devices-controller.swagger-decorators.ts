@@ -12,7 +12,7 @@ import { ErrorsMessagesSwaggerType } from '../../../validation/types/errors-mess
 import { SecurityDeviceOutputDTO } from '../../../../modules/user/api/security-devices/output-dto/security-device.output-dto';
 
 export const SecurityDevicesControllerSwaggerDecorators = {
-  get getSecurityDeviceList() {
+  get getSecurityDeviceListByUserId() {
     return applyDecorators(
       ApiOperation({ summary: `Get a user's devices` }),
       ApiOkResponse({
