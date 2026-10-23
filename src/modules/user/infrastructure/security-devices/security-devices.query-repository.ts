@@ -12,9 +12,6 @@ export class SecurityDevicesQueryRepository {
 
   /*Метод для поиска пользовательских устройств по ID пользователя в БД.*/
   public async findAllByUserId(userId: string): Promise<SecurityDeviceList> {
-    return await this.securityDevicesRepository
-      .createQueryBuilder('securityDevice')
-      .where('securityDevice.userId = :userId', { userId })
-      .getMany();
+    return this.securityDevicesRepository.findBy({ userId });
   }
 }

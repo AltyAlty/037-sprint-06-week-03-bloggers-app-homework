@@ -566,9 +566,9 @@
 2.1.2 "/src/modules/blog/api/blogs/" - контроллер, Input DTO и Output DTO для блогов.
 2.1.3 "/src/modules/blog/api/comments/" - контроллер, Input DTO и Output DTO для комментариев.
 2.1.4 "/src/modules/blog/api/posts/" - контроллер, Input DTO и Output DTO для постов.
-2.1.5 "/src/modules/blog/application/blogs/" - сервисы для блогов.
-2.1.6 "/src/modules/blog/application/comments/" - сервисы для комментариев.
-2.1.7 "/src/modules/blog/application/posts/" - сервисы для постов.
+2.1.5 "/src/modules/blog/application/blogs/" - сервисы, команды, запросы и события для блогов.
+2.1.6 "/src/modules/blog/application/comments/" - сервисы, команды, запросы и события для комментариев.
+2.1.7 "/src/modules/blog/application/posts/" - сервисы, команды, запросы и события для постов.
 2.1.8 "/src/modules/blog/domain/blogs/domain-dto/" - сущности и Domain DTO для блогов.
 2.1.9 "/src/modules/blog/domain/comments/domain-dto/" - сущности и Domain DTO для комментариев.
 2.1.10 "/src/modules/blog/domain/posts/domain-dto/" - сущности и  Domain DTO для постов.
@@ -581,9 +581,9 @@
 2.2.2 "/src/modules/user/api/auth/" - контроллер, декораторы, Input DTO и Output DTO для работы с аутентификацией и авторизацией.
 2.2.3 "/src/modules/user/api/security-devices/" - контроллер, Input DTO и Output DTO для пользовательских устройств.
 2.2.4 "/src/modules/user/api/users/" - контроллер, Input DTO и Output DTO для пользователей.
-2.2.5 "/src/modules/user/application/auth/" - сервисы для работы с аутентификацией и авторизацией.
-2.2.6 "/src/modules/user/application/security-devices/" - сервисы для пользователей.
-2.2.7 "/src/modules/user/application/users/" - сервисы для пользовательских устройств.
+2.2.5 "/src/modules/user/application/auth/" - сервисы, команды, запросы и события для работы с аутентификацией и авторизацией.
+2.2.6 "/src/modules/user/application/security-devices/" - сервисы, команды, запросы и события для пользователей.
+2.2.7 "/src/modules/user/application/users/" - сервисы, команды, запросы и события для пользовательских устройств.
 2.2.8 "/src/modules/user/config/auth.config.ts" - конфигурация по работе с переменными окружения необходимыми для аутентификации и авторизации.
 2.2.9 "/src/modules/user/config/auth-config.module.ts" - вспомогательный модуль для раздачи переменных из класса "AuthConfig".
 2.2.10 "/src/modules/user/domain/auth/" - сущности и Domain DTO для работы с аутентификацией и авторизацией.

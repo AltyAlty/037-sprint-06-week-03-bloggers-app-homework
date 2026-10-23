@@ -1,0 +1,146 @@
+Установка версии приложения с использованием Express.js и MongoDB:
+1. Инициализация проекта: pnpm init
+2. Установка зависимостей (если необходимо): pnpm install
+3. Установка Express.js: pnpm add express
+4. Установка TypeScript (пока нужна версия <7 для TS-Jest): pnpm add -D typescript@6.0.3
+5. Инициализация файла "tsconfig.json" (если необходимо): pnpm tsc --init
+6. Установка типов для Node.js: pnpm add -D @types/node
+7. Установка типов для Express.js: pnpm add -D @types/express
+8. Установка Jest: pnpm add -D jest
+9. Установка типов для Jest: pnpm add -D @types/jest
+10. Установка TS-Jest: pnpm add -D ts-jest
+11. Установка Supertest: pnpm add -D supertest
+12. Установка типов для Supertest: pnpm add -D @types/supertest
+13. Установка ESLint: pnpm add -D eslint
+14. Установка @typescript-eslint/eslint-plugin: pnpm add -D @typescript-eslint/eslint-plugin
+15. Установка @typescript-eslint/parser: pnpm add -D @typescript-eslint/parser
+16. Установка Prettier: pnpm add -D prettier
+17. Установка eslint-plugin-prettier: pnpm add -D eslint-plugin-prettier
+18. Установка eslint-config-prettier: pnpm add -D eslint-config-prettier
+19. Установка nodemon: pnpm add -D nodemon
+20. Установка swagger-jsdoc: pnpm add swagger-jsdoc
+21. Установка типов для swagger-jsdoc: pnpm add -D @types/swagger-jsdoc
+22. Установка swagger-ui-express: pnpm add swagger-ui-express
+23. Установка типов для swagger-ui-express: pnpm add -D @types/swagger-ui-express
+24. Установка express-validator: pnpm add express-validator
+25. Установка драйвера MongoDB для Node.js: pnpm add mongodb
+26. Установка Dotenv: pnpm add dotenv
+27. Установка bcrypt: pnpm add bcrypt
+28. Установка типов для bcrypt: pnpm add -D @types/bcrypt
+29. Установка @node-rs/argon2: pnpm add @node-rs/argon2
+30. Установка jsonwebtoken: pnpm add jsonwebtoken
+31. Установка типов для jsonwebtoken: pnpm add -D @types/jsonwebtoken
+32. Установка nodemailer: pnpm add nodemailer
+33. Установка типов для nodemailer: pnpm add -D @types/nodemailer
+34. Установка MongoDB Memory Server: pnpm add -D mongodb-memory-server
+35. Установка date-fns: pnpm add date-fns
+36. Установка ts-node: pnpm add -D ts-node
+37. Установка cookie-parser: pnpm add cookie-parser
+38. Установка типов для cookie-parser: pnpm add -D @types/cookie-parser
+39. Установка cors: pnpm add cors
+40. Установка типов для cors: pnpm add -D @types/cors
+41. Установка InversifyJS: pnpm add inversify
+42. Установка reflect-metadata: pnpm add reflect-metadata
+43. Установка Mongoose: pnpm add mongoose
+44. Установка babel-jest: pnpm add -D babel-jest
+45. Установка ядра компилятора Babel: pnpm add -D @babel/core
+46. Установка пресета плагинов для Babel: pnpm add -D @babel/preset-env
+47. Установка inversify-inject-decorators: pnpm add inversify-inject-decorators
+48. Установка eslint-plugin-simple-import-sort: pnpm add -D eslint-plugin-simple-import-sort
+
+/*--------------------------------------------------------------------------------------------------------------------*/
+
+Установка версии приложения с использованием NestJS, MongoDB и PostgreSQL:
+1. Установка Nest CLI глобально (если необходимо): npm install -g @nestjs/cli
+2. Создание проекта на NestJS при помощи установленного глобально Nest CLI (если необходимо): nest new app_name
+3. Создание проекта на NestJS без установленного глобально Nest CLI (если необходимо): npx @nestjs/cli@latest new app_name
+4. Установка зависимостей (если необходимо): pnpm install
+5. Установка ESLint: pnpm add -D eslint
+6. Установка typescript-eslint: pnpm add -D typescript-eslint
+7. Установка @typescript-eslint/eslint-plugin: pnpm add -D @typescript-eslint/eslint-plugin
+8. Установка @typescript-eslint/parser: pnpm add -D @typescript-eslint/parser
+9. Установка @eslint/js: pnpm add -D @eslint/js
+10. Установка globals: pnpm add -D globals
+11. Установка eslint-plugin-prettier: pnpm add -D eslint-plugin-prettier
+12. Установка eslint-config-prettier: pnpm add -D eslint-config-prettier
+13. Установка eslint-plugin-simple-import-sort: pnpm add -D eslint-plugin-simple-import-sort
+14. Установка @nestjs/config: pnpm add @nestjs/config
+15. Установка Dotenv: pnpm add dotenv
+16. Установка cross-env: pnpm add -D cross-env
+17. Установка Mongoose: pnpm add mongoose
+18. Установка @nestjs/mongoose: pnpm add @nestjs/mongoose
+19. Установка class-validator: pnpm add class-validator
+20. Установка class-transformer: pnpm add class-transformer
+21. Установка @nestjs/swagger: pnpm add @nestjs/swagger
+22. Установка swagger-ui-express: pnpm add swagger-ui-express
+23. Установка MongoDB Memory Server: pnpm add -D mongodb-memory-server
+24. Установка date-fns: pnpm add date-fns
+25. Установка bcrypt: pnpm add bcrypt
+26. Установка типов для bcrypt: pnpm add -D @types/bcrypt
+27. Установка @node-rs/argon2: pnpm add @node-rs/argon2
+28. Установка Passport.js: pnpm add passport
+29. Установка @nestjs/passport: pnpm add @nestjs/passport
+30. Установка passport-local: pnpm add passport-local
+31. Установка типов для passport-local: pnpm add -D @types/passport-local
+32. Установка @nestjs/jwt: pnpm add @nestjs/jwt
+33. Установка passport-jwt: pnpm add passport-jwt
+34. Установка типов для passport-jwt: pnpm add -D @types/passport-jwt
+35. Установка nodemailer: pnpm add nodemailer
+36. Установка типов для nodemailer: pnpm add -D @types/nodemailer
+37. Установка @nestjs-modules/mailer: pnpm add @nestjs-modules/mailer
+38. Установка cookie-parser: pnpm add cookie-parser
+39. Установка типов для cookie-parser: pnpm add -D @types/cookie-parser
+40. Установка типов для @nestjs/cqrs: pnpm add @nestjs/cqrs
+41. Установка типов для @nestjs/throttler: pnpm add @nestjs/throttler
+42. Установка pg: pnpm add pg
+43. Установка типов для pg: pnpm add -D @types/pg
+44. Установка TypeORM: pnpm add typeorm
+45. Установка @nestjs/typeorm: pnpm add @nestjs/typeorm
+
+/*--------------------------------------------------------------------------------------------------------------------*/
+
+Установка версии приложения с использованием NestJS и PostgreSQL:
+1. Установка Nest CLI глобально (если необходимо): npm install -g @nestjs/cli
+2. Создание проекта на NestJS при помощи установленного глобально Nest CLI (если необходимо): nest new app_name
+3. Создание проекта на NestJS без установленного глобально Nest CLI (если необходимо): npx @nestjs/cli@latest new app_name
+4. Установка зависимостей (если необходимо): pnpm install
+5. Установка ESLint: pnpm add -D eslint
+6. Установка typescript-eslint: pnpm add -D typescript-eslint
+7. Установка @typescript-eslint/eslint-plugin: pnpm add -D @typescript-eslint/eslint-plugin
+8. Установка @typescript-eslint/parser: pnpm add -D @typescript-eslint/parser
+9. Установка @eslint/js: pnpm add -D @eslint/js
+10. Установка globals: pnpm add -D globals
+11. Установка eslint-plugin-prettier: pnpm add -D eslint-plugin-prettier
+12. Установка eslint-config-prettier: pnpm add -D eslint-config-prettier
+13. Установка eslint-plugin-simple-import-sort: pnpm add -D eslint-plugin-simple-import-sort
+14. Установка @nestjs/config: pnpm add @nestjs/config
+15. Установка Dotenv: pnpm add dotenv
+16. Установка cross-env: pnpm add -D cross-env
+17. Установка class-validator: pnpm add class-validator
+18. Установка class-transformer: pnpm add class-transformer
+19. Установка @nestjs/swagger: pnpm add @nestjs/swagger
+20. Установка swagger-ui-express: pnpm add swagger-ui-express
+21. Установка date-fns: pnpm add date-fns
+22. Установка bcrypt: pnpm add bcrypt
+23. Установка типов для bcrypt: pnpm add -D @types/bcrypt
+24. Установка @node-rs/argon2: pnpm add @node-rs/argon2
+25. Установка Passport.js: pnpm add passport
+26. Установка @nestjs/passport: pnpm add @nestjs/passport
+27. Установка passport-local: pnpm add passport-local
+28. Установка типов для passport-local: pnpm add -D @types/passport-local
+29. Установка @nestjs/jwt: pnpm add @nestjs/jwt
+30. Установка passport-jwt: pnpm add passport-jwt
+31. Установка типов для passport-jwt: pnpm add -D @types/passport-jwt
+32. Установка nodemailer: pnpm add nodemailer
+33. Установка типов для nodemailer: pnpm add -D @types/nodemailer
+34. Установка @nestjs-modules/mailer: pnpm add @nestjs-modules/mailer
+35. Установка cookie-parser: pnpm add cookie-parser
+36. Установка типов для cookie-parser: pnpm add -D @types/cookie-parser
+37. Установка типов для @nestjs/cqrs: pnpm add @nestjs/cqrs
+38. Установка типов для @nestjs/throttler: pnpm add @nestjs/throttler
+39. Установка pg: pnpm add pg
+40. Установка типов для pg: pnpm add -D @types/pg
+41. Установка TypeORM: pnpm add typeorm
+42. Установка @nestjs/typeorm: pnpm add @nestjs/typeorm
+
+/*--------------------------------------------------------------------------------------------------------------------*/

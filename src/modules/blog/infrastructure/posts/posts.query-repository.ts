@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, SelectQueryBuilder } from 'typeorm';
+import { FindOptionsWhere, In, Repository, SelectQueryBuilder } from 'typeorm';
 import { SortDirectionInputDTO } from '../../../../core/pagination/input-dto/sort-direction.input-dto';
 import { GetPostListQueryInputDTO } from '../../api/posts/input-dto/query/get-post-list-query.input-dto';
 import { PostSortFieldQueryInputDTO } from '../../api/posts/input-dto/query/post-sort-field-query.input-dto';
@@ -22,11 +22,7 @@ export class PostsQueryRepository {
 
   /*Метод для поиска поста по ID в БД.*/
   public async findById(id: string): Promise<Post | null> {
-    return await this.postsRepository
-      .createQueryBuilder('post')
-      .leftJoinAndSelect('post.blog', 'blog')
-      .where('post.id = :id', { id })
-      .getOne();
+    return this.postsRepository.findOne({ where: { id }, relations: { blog: true } });
   }
 
   /*Метод для поиска постов в БД.*/
@@ -51,58 +47,45 @@ export class PostsQueryRepository {
     const sortField: keyof Post = allowedSortFields[dto.sortBy] ?? 'createdAt';
     /*Маппим направления сортировки в ключевые слова PostgreSQL.*/
     const sortDirection: 'ASC' | 'DESC' = dto.sortDirection === SortDirectionInputDTO.Asc ? 'ASC' : 'DESC';
+    /*Динамически собираем условие для клаузы "WHERE": если был передан параметр "blogId", то фильтруем по нему, иначе
+    условие для клаузы "WHERE" остается пустым объектом и TypeORM вернет все записи с проверкой на soft удаление.*/
+    const where: FindOptionsWhere<Post> = {};
+    if (blogId) where.blogId = blogId;
 
-    /*Создаем экземпляр класса "QueryBuilder" и подтягиваем связь с блогами.*/
-    const queryBuilder: SelectQueryBuilder<Post> = this.postsRepository
-      .createQueryBuilder('post')
-      .leftJoinAndSelect('post.blog', 'blog');
-
-    /*Динамически добавляем условие для клаузы "WHERE": если был передан параметр "blogId", то фильтруем по нему.*/
-    if (blogId) queryBuilder.where('post.blogId = :blogId', { blogId });
-
-    /*Добавляем сортировку.*/
-    if (dto.sortBy === PostSortFieldQueryInputDTO.BlogName) {
-      queryBuilder.orderBy('blog.name', sortDirection).addOrderBy('post.id', 'ASC');
-    } else {
-      queryBuilder.orderBy(`post.${sortField}`, sortDirection).addOrderBy('post.id', 'ASC');
-    }
-
-    /*Добавляем пагинацию и выполняем запрос.*/
-    queryBuilder.skip(skip).take(dto.pageSize);
     /*Последовательно выполняем запрос данных и подсчет общего количества элементов.*/
-    const [items, totalCount]: [PostList, number] = await queryBuilder.getManyAndCount();
+    const [items, totalCount]: [PostList, number] = await this.postsRepository.findAndCount({
+      where,
+      relations: { blog: true },
+      order:
+        dto.sortBy === PostSortFieldQueryInputDTO.BlogName
+          ? { blog: { name: sortDirection }, id: 'ASC' }
+          : { [sortField]: sortDirection, id: 'ASC' },
+      skip,
+      take: dto.pageSize,
+    });
+
     /*Возвращаем данные по постам.*/
     return { items, totalCount };
   }
 
   /*Метод для поиска данных о лайке поста по ID поста и ID пользователя в БД.*/
   public async findPostLikeDataByPostIdAndUserId(postId: string, userId: string): Promise<PostLikeData | null> {
-    return await this.postLikesDataRepository
-      .createQueryBuilder('postLikeData')
-      .where('postLikeData.postId = :postId', { postId })
-      .andWhere('postLikeData.userId = :userId', { userId })
-      .getOne();
+    return this.postLikesDataRepository.findOneBy({ postId, userId });
   }
 
   /*Метод для поиска данных о лайках постов по ID постов и ID пользователя в БД.*/
   public async findAllPostLikesDataByPostIdsAndUserId(postIds: string[], userId: string): Promise<PostLikeData[]> {
-    return await this.postLikesDataRepository
-      .createQueryBuilder('postLikeData')
-      .where('postLikeData.postId IN (:...postIds)', { postIds })
-      .andWhere('postLikeData.userId = :userId', { userId })
-      .getMany();
+    return this.postLikesDataRepository.find({ where: { postId: In(postIds), userId } });
   }
 
   /*Метод для поиска данных о трех последних лайках поста по ID поста в БД.*/
   public async findLastThreePostLikesByPostId(postId: string): Promise<NewestPostLikeListOutputDTO> {
-    const likes: PostLikeData[] = await this.postLikesDataRepository
-      .createQueryBuilder('postLikeData')
-      .leftJoinAndSelect('postLikeData.user', 'user')
-      .where('postLikeData.postId = :postId', { postId })
-      .andWhere('postLikeData.likeStatus = :status', { status: PostLikeStatusDomainDTO.Like })
-      .orderBy('postLikeData.addedAt', 'DESC')
-      .take(3)
-      .getMany();
+    const likes: PostLikeData[] = await this.postLikesDataRepository.find({
+      where: { postId, likeStatus: PostLikeStatusDomainDTO.Like },
+      relations: { user: true },
+      order: { addedAt: 'DESC' },
+      take: 3,
+    });
 
     /*Возвращаем данные о трех последних лайках поста.*/
     return likes.map((like: PostLikeData): NewestPostLikeOutputDTO => ({

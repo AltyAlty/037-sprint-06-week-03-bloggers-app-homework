@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, SelectQueryBuilder } from 'typeorm';
+import { FindOptionsWhere, ILike, Repository } from 'typeorm';
 import { SortDirectionInputDTO } from '../../../../core/pagination/input-dto/sort-direction.input-dto';
 import { GetBlogListQueryInputDTO } from '../../api/blogs/input-dto/query/get-blog-list-query.input-dto';
 import { Blog, BlogList } from '../../domain/blogs/blog.entity';
@@ -12,7 +12,7 @@ export class BlogsQueryRepository {
 
   /*Метод для поиска блога по ID в БД.*/
   public async findById(id: string): Promise<Blog | null> {
-    return await this.blogsRepository.createQueryBuilder('blog').where('blog.id = :id', { id }).getOne();
+    return await this.blogsRepository.findOneBy({ id });
   }
 
   /*Метод для поиска блогов в БД.*/
@@ -33,19 +33,20 @@ export class BlogsQueryRepository {
     const sortField: keyof Blog = allowedSortFields[dto.sortBy] ?? 'createdAt';
     /*Маппим направления сортировки в ключевые слова PostgreSQL.*/
     const sortDirection: 'ASC' | 'DESC' = dto.sortDirection === SortDirectionInputDTO.Asc ? 'ASC' : 'DESC';
-    /*Создаем экземпляр класса "QueryBuilder".*/
-    const queryBuilder: SelectQueryBuilder<Blog> = this.blogsRepository.createQueryBuilder('blog');
+    /*Динамически собираем условие для клаузы "WHERE": если было передано свойство "dto.searchNameTerm", то добавляем
+    условие для оператора "ILIKE", иначе условие для клаузы "WHERE" остается пустым объектом и TypeORM вернет все
+    записи с проверкой на soft удаление.*/
+    const where: FindOptionsWhere<Blog> = {};
+    if (dto.searchNameTerm) where.name = ILike(`%${this._escapeLike(dto.searchNameTerm)}%`);
 
-    /*Динамически добавляем условие для клаузы "WHERE": если было передано свойство "dto.searchNameTerm", то добавляем
-    условие с оператором "ILIKE" с гарантией, что оно будет использовано как простые данные, а не ка SQL-инъекция. Иначе
-    условие не добавляется и возвращаются все записи с проверкой на soft удаление.*/
-    if (dto.searchNameTerm)
-      queryBuilder.where('blog.name ILIKE :searchName', { searchName: `%${this._escapeLike(dto.searchNameTerm)}%` });
-
-    /*Добавляем сортировку и пагинацию.*/
-    queryBuilder.orderBy(`blog.${sortField}`, sortDirection).skip(skip).take(dto.pageSize);
     /*Последовательно выполняем запрос данных и подсчет общего количества элементов.*/
-    const [items, totalCount]: [BlogList, number] = await queryBuilder.getManyAndCount();
+    const [items, totalCount]: [BlogList, number] = await this.blogsRepository.findAndCount({
+      where,
+      order: { [sortField]: sortDirection },
+      skip,
+      take: dto.pageSize,
+    });
+
     /*Возвращаем данные по блогам.*/
     return { items, totalCount };
   }

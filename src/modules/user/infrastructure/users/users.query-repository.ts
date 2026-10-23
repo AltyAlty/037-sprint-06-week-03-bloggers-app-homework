@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Brackets, Repository, SelectQueryBuilder } from 'typeorm';
+import { FindOptionsWhere, ILike, Repository } from 'typeorm';
 import { SortDirectionInputDTO } from '../../../../core/pagination/input-dto/sort-direction.input-dto';
 import { GetUserListQueryInputDTO } from '../../api/users/input-dto/query/get-user-list-query.input-dto';
 import { User, UserList } from '../../domain/users/users.entity';
@@ -12,7 +12,7 @@ export class UsersQueryRepository {
 
   /*Метод для поиска пользователя по ID в БД.*/
   public async findById(id: string): Promise<User | null> {
-    return await this.usersRepository.createQueryBuilder('u').where('u.id = :id', { id }).getOne();
+    return this.usersRepository.findOneBy({ id });
   }
 
   /*Метод для поиска пользователей в БД.*/
@@ -27,10 +27,8 @@ export class UsersQueryRepository {
     const sortField: keyof User = allowedSortFields[dto.sortBy] ?? 'createdAt';
     /*Маппим направления сортировки в ключевые слова PostgreSQL.*/
     const sortDirection: 'ASC' | 'DESC' = dto.sortDirection === SortDirectionInputDTO.Asc ? 'ASC' : 'DESC';
-    /*Создаем экземпляр класса "QueryBuilder".*/
-    const queryBuilder: SelectQueryBuilder<User> = this.usersRepository.createQueryBuilder('u');
 
-    /*Динамически добавляем условие для клаузы "WHERE":
+    /*Динамически собираем условие для клаузы "WHERE":
     1. Если были указаны условия для поиска по логину и email, то проверяем:
     1.1 Что значение по полю "login" подходит к условию для поиска по логину, либо что значение по полю "originalEmail"
     подходит к условию для поиска по email.
@@ -42,30 +40,26 @@ export class UsersQueryRepository {
     3.1 Что значение по полю "originalEmail" подходит к условию для поиска по email.
     3.2 На soft удаление.
     4. Если не было указано условий для поиска по логину и email, то проверяем только на soft удаление.*/
-    if (dto.searchLoginTerm && dto.searchEmailTerm) {
-      queryBuilder.where(
-        new Brackets(subQb => {
-          subQb
-            .where('u.login ILIKE :searchLogin', { searchLogin: `%${this._escapeLike(dto.searchLoginTerm!)}%` })
-            .orWhere('u.originalEmail ILIKE :searchEmail', {
-              searchEmail: `%${this._escapeLike(dto.searchEmailTerm!)}%`,
-            });
-        })
-      );
-    } else if (dto.searchLoginTerm) {
-      queryBuilder.where('u.login ILIKE :searchLogin', { searchLogin: `%${this._escapeLike(dto.searchLoginTerm)}%` });
-    } else if (dto.searchEmailTerm) {
-      queryBuilder.where('u.originalEmail ILIKE :searchEmail', {
-        searchEmail: `%${this._escapeLike(dto.searchEmailTerm)}%`,
-      });
-    }
+    const where: FindOptionsWhere<User> | FindOptionsWhere<User>[] =
+      dto.searchLoginTerm && dto.searchEmailTerm
+        ? [
+            { login: ILike(`%${this._escapeLike(dto.searchLoginTerm)}%`) },
+            { originalEmail: ILike(`%${this._escapeLike(dto.searchEmailTerm)}%`) },
+          ]
+        : dto.searchLoginTerm
+          ? { login: ILike(`%${this._escapeLike(dto.searchLoginTerm)}%`) }
+          : dto.searchEmailTerm
+            ? { originalEmail: ILike(`%${this._escapeLike(dto.searchEmailTerm)}%`) }
+            : {};
 
-    /*Добавляем сортировку.*/
-    queryBuilder.orderBy(`u.${sortField}`, sortDirection).addOrderBy('u.id', 'ASC');
-    /*Добавляем пагинацию и выполняем запрос.*/
-    queryBuilder.skip(skip).take(dto.pageSize);
     /*Последовательно выполняем запрос данных и подсчет общего количества элементов.*/
-    const [items, totalCount]: [User[], number] = await queryBuilder.getManyAndCount();
+    const [items, totalCount]: [User[], number] = await this.usersRepository.findAndCount({
+      where,
+      order: { [sortField]: sortDirection, id: 'ASC' },
+      skip,
+      take: dto.pageSize,
+    });
+
     /*Возвращаем данные по пользователям.*/
     return { items, totalCount };
   }
