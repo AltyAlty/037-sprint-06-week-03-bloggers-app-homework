@@ -18,7 +18,11 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
-    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand"
+    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
+    "migration:generate": "cross-env NODE_ENV=development typeorm-ts-node-commonjs migration:generate -d ./src/migrations/config/typeorm.config.ts",
+    "migration:run": "cross-env NODE_ENV=development typeorm-ts-node-commonjs migration:run -d ./src/migrations/config/typeorm.config.ts",
+    "migration:revert": "cross-env NODE_ENV=development typeorm-ts-node-commonjs migration:revert -d ./src/migrations/config/typeorm.config.ts",
+    "migration:create": "cross-env NODE_ENV=development typeorm-ts-node-commonjs migration:create ./src/migrations/"
   },
   "dependencies": {
     "@nestjs-modules/mailer": "^3.0.2",

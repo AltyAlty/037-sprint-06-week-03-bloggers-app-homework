@@ -27,5 +27,9 @@
 15. Запуск тестов при помощи Jest в режиме наблюдения: jest --watch
 16. Запуск тестов при помощи Jest c генерацией отчета о покрытии кода: jest --coverage
 17. Запуск пошаговой отладки тестов в IDE: node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand
+18. Генерация миграции: cross-env NODE_ENV=development typeorm-ts-node-commonjs migration:generate -d ./src/migrations/config/typeorm.config.ts
+19. Применение всех миграций, которые еще не были приняты, в порядке их отметок времени: cross-env NODE_ENV=development typeorm-ts-node-commonjs migration:run -d ./src/migrations/config/typeorm.config.ts
+20. Откат последней примененной миграции: cross-env NODE_ENV=development typeorm-ts-node-commonjs migration:revert -d ./src/migrations/config/typeorm.config.ts
+21. Создание пустого файла миграции: cross-env NODE_ENV=development typeorm-ts-node-commonjs migration:create ./src/migrations/
 
 /*--------------------------------------------------------------------------------------------------------------------*/

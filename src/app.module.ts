@@ -31,9 +31,11 @@ import { TestingModule } from './testing/testing.module';
         autoLoadEntities: true,
         /*Указываем, чтобы при каждом запуске приложения TypeORM автоматически сравнивал сущности с реальными таблицами
         в БД и синхронизировал структуру. Строго рекомендуется использовать только в окружении для разработки.*/
-        synchronize: true,
+        synchronize: false,
         /*Включаем логирование SQL-запросов.*/
         logging: false,
+        /*Указываем папку для миграций.*/
+        migrations: [__dirname + 'migrations/*.ts'],
       }),
     }),
     ThrottlerModule.forRootAsync({
