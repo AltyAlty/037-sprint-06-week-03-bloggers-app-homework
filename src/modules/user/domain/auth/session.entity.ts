@@ -30,6 +30,9 @@ export class Session {
   })
   public createdAt: Date;
 
+  // @Column({ name: 'test', type: 'varchar', length: 100, nullable: true })
+  // public test: string;
+
   @ManyToOne((): typeof User => User, (user: User): SessionList => user.sessions, {
     nullable: false,
     onDelete: 'NO ACTION',
